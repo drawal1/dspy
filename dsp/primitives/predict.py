@@ -117,18 +117,12 @@ def _generate(template: Template, **kwargs) -> Callable:
 
         finished_completions = []
         for completion in completions:
-            extend_gen = False
-            for key in field_names:
-                if key not in completion:
-                    extend_gen = True
-                    break
-
-            if extend_gen:
-                finished_completions.append(
-                    extend_generation(completion, field_names, stage, max_depth, original_example),
-                )
-            else:
+            if all((completion.get(key, "") != "") for key in field_names if key not in example):
                 finished_completions.append(completion)
+                continue
+            finished_completions.append(
+                extend_generation(completion, field_names, stage, max_depth, original_example),
+            )
 
         completions = Completions(finished_completions, template=template)
         example = example.copy(completions=completions)
