@@ -129,7 +129,6 @@ class EnsembledProgram(dspy.Module):
                 raise FileNotFoundError(f"deterministic.pkl file not found in the folder path {folder_path}.") from exc
 
 
-@staticmethod
 def default_example_serialization_func(example: Any) -> str:
     """Default serialization function for examples."""
     return " | ".join([f"{key}: {value}" for key, value in example.items() if key in example._input_keys])  # pylint: disable=protected-access
@@ -181,20 +180,18 @@ class Ensemble(Teleprompter):
         # print(f"Best program scores: {best_pgm_scores}")
         return best_pgm_indices, best_pgm_scores
 
-    def optimize(
+    def compile(
         self,
         candidate_programs: list[Any],
-        trainset: Optional[Any],
-        valset: Optional[Any] = None,
+        exampleset: Optional[Any],
     ) -> EnsembledProgram:
         """Compiles the ensemble of programs."""
         ensembled_program = EnsembledProgram(self.reduce_fn, self.size, self.deterministic, self.min_acceptable_score)
         ensembled_program.programs = [x[-1] for x in candidate_programs]
 
         if self.deterministic:
-            if not trainset and not valset:
-                raise ValueError("Either trainset or valset must be provided for compiling deterministic ensemble.")
-            exampleset = valset if valset else trainset
+            if not exampleset:
+                raise ValueError("exampleset must be provided for compiling deterministic ensemble.")
 
             program_subscores_lists = [pgm[1] for pgm in candidate_programs]
             ensembled_program.best_pgm_indices, ensembled_program.best_pgm_scores = self.process_score_matrix(
@@ -202,8 +199,10 @@ class Ensemble(Teleprompter):
             )
             if len(ensembled_program.best_pgm_indices) != len(exampleset):
                 raise ValueError(
-                    "The number of examples in the exampleset must match the number of examples in the score matrix."
-                    "Did you specify a valset in BootstrapRandomFewShot? If so, provide that valset to this function",
+                    "The number of examples in exampleset must match the number of examples in candidate programs."
+                    "Did you specify a valset in BootstrapRandomFewShot?",
+                    "If so, provide that valset to this function as exampleset.",
+                    "Otherwise provide the trainset as exampleset.",
                 )
 
             vectorizer = dsp.SentenceTransformersVectorizer()

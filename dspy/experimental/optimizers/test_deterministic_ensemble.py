@@ -133,9 +133,9 @@ compiled_deterministic_ensemble = Ensemble(
     reduce_fn=dspy.majority,
     deterministic=True,
     metric_func=metric_usingtraceflag,
-).optimize(
+).compile(
     compiled_bootstrapfewshotwithrandomsearch_withteacher.candidate_programs,
-    trainset=train,
+    exampleset=train,
 )
 
 print("DETERMINISTIC ENSEMBLE OPTIMIZER:")
