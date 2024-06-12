@@ -77,16 +77,20 @@ class AWSProvider(ABC):
         return self.__class__.__name__
 
     @abstractmethod
+    def call_model_impl(self, model_id: str, body: str) -> str:
+        """Call the model and return the response."""
+
     @backoff.on_exception(
         backoff.expo,
         ERRORS,
-        max_time=1000,
-        max_tries=8,
+        max_time=200,
+        max_tries=3,
         on_backoff=backoff_hdlr,
         giveup=giveup_hdlr,
     )
     def call_model(self, model_id: str, body: str) -> str:
-        """Call the model and return the response."""
+        """Call the child class implementaiton of the model and return the response."""
+        self.call_model_impl(model_id, body)
 
     def sanitize_kwargs(self, query_kwargs: dict[str, Any]) -> tuple[int, dict[str, Any]]:
         """Ensure that input kwargs can be used by Bedrock or Sagemaker."""
@@ -127,7 +131,7 @@ class Bedrock(AWSProvider):
         """
         super().__init__(region_name, "bedrock-runtime", profile_name, batch_n_enabled)
 
-    def call_model(self, model_id: str, body: str) -> str:
+    def call_model_impl(self, model_id: str, body: str) -> str:
         return self.predictor.invoke_model(
             modelId=model_id,
             body=body,
@@ -152,15 +156,7 @@ class Sagemaker(AWSProvider):
         """
         super().__init__(region_name, "runtime.sagemaker", profile_name)
 
-    @backoff.on_exception(
-        backoff.expo,
-        ERRORS,
-        max_time=1000,
-        max_tries=8,
-        on_backoff=backoff_hdlr,
-        giveup=giveup_hdlr,
-    )
-    def call_model(self, model_id: str, body: str) -> str:
+    def call_model_impl(self, model_id: str, body: str) -> str:
         return self.predictor.invoke_endpoint(
             EndpointName=model_id,
             Body=body,
