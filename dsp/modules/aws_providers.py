@@ -90,7 +90,7 @@ class AWSProvider(ABC):
     )
     def call_model(self, model_id: str, body: str) -> str:
         """Call the child class implementaiton of the model and return the response."""
-        self.call_model_impl(model_id, body)
+        return self.call_model_impl(model_id, body)
 
     def sanitize_kwargs(self, query_kwargs: dict[str, Any]) -> tuple[int, dict[str, Any]]:
         """Ensure that input kwargs can be used by Bedrock or Sagemaker."""
